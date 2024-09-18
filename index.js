@@ -1,9 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 const checkLicense = require('./middleware/licenseCheck');
 const app = express();
 const PORT = 4000;
+
+async function getBrowser() {
+  return puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath,
+    headless: "shell",
+  });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -12,7 +21,15 @@ app.post('/scrape', checkLicense, async (req, res) => {
   const { place, category } = req.body;
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    // const browser = await puppeteer.launch({ headless: "shell" });
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
+    });
+
     const page = await browser.newPage();
 
     const searchUrl = `https://www.google.com/search?q=${category}+in+${place}&tbm=lcl`;
@@ -55,15 +72,15 @@ app.post('/scrape', checkLicense, async (req, res) => {
         const reviewCountSpan = element.querySelector('span.RDApEe.YrbPuc');
         const ratingSpan = element.querySelector('span.yi40Hd.YrbPuc');
         const phoneNumberSpan = element.querySelector('span.BNeawe.tAd8D.AP7Wnd');
-        
+
         // New method for extracting specific phone numbers
-        const phoneNumbers = phoneNumberSpan 
+        const phoneNumbers = phoneNumberSpan
           ? phoneNumberSpan.innerText.trim()
             .split('⋅')
             .map(phoneNumber => phoneNumber.replace(/\D/g, '')) // Clean up each phone number
             .filter(Boolean)
           : []; // Handle case where phone numbers are not present
-        
+
         const name = nameElement ? nameElement.innerText.trim() : 'N/A';
         const rating = ratingElement ? parseFloat(ratingElement.innerText.trim()) : 'N/A';
         const reviews = reviewsElement ? parseInt(reviewsElement.innerText.replace(/[^0-9]/g, '').trim()) : 'N/A';
@@ -73,12 +90,12 @@ app.post('/scrape', checkLicense, async (req, res) => {
         const gmbProfileLink = gmbProfileLinkElement ? gmbProfileLinkElement.getAttribute('href') : 'N/A';
         const reviewCount = reviewCountSpan ? reviewCountSpan.innerText.trim().match(/\d+/)[0] : 'N/A';
         const ratingValue = ratingSpan ? parseFloat(ratingSpan.innerText.trim()) : 'N/A';
-        
+
         // New selector for the business category
         const categoryElement = element.querySelector('.rllt__details > div:nth-child(2)');
-        
+
         const category = categoryElement ? categoryElement.innerText.trim() : 'N/A';
-        
+
         profiles.push({
           name,
           rating,

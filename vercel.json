@@ -1,16 +1,25 @@
-
 {
     "version": 2,
     "builds": [
-     {
-         "src": "./index.js",
-         "use": "@vercel/node"
-     }
+      {
+        "src": "./index.js",
+        "use": "@vercel/node",
+        "config": {
+          "maxDuration": 300
+        }
+      }
     ],
     "routes": [
-     {
-         "src": "/(.*)",
-         "dest": "/"
-     }
-    ]
- }
+      {
+        "src": "/(.*)",
+        "dest": "/"
+      }
+    ],
+    "build": {
+      "env": {
+        "NODEJS_MAX_MEMORY": "3008",
+        "VERCEL_SERVERLESS_FUNCTION_MEMORY_MB": "3008",
+        "MAX_DURATION": "300"
+      }
+    }
+  }
